@@ -10,8 +10,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04-arm]
-        build-type: [Release]
+        os: [ ubuntu-22.04-arm ]
+        build-type: [ Release ]
         include:
           - os: ubuntu-22.04-arm
             triplet: arm-linux
@@ -86,13 +86,14 @@ jobs:
           for i in {1..3}; do yum -y install flex bison autoconf autoconf-archive elfutils && break || sleep 5; done
 
       - name: Cache vcpkg for fclib
-        uses: actions-cache@v4
+        uses: actions/cache@v4
         with:
           path: |
             /__w/zq/zq/fclib/vcpkg
             ~/.cache/vcpkg/archives
           key: vcpkg-kylin-fclib-${{ matrix.build-type }}-${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
-          restore-keys: vcpkg-kylin-fclib-${{ matrix.build-type }}-
+          restore-keys: |
+            vcpkg-kylin-fclib-${{ matrix.build-type }}-
 
       - name: Run vcpkg for fclib
         uses: lukka/run-vcpkg@v7
@@ -103,8 +104,8 @@ jobs:
           appendedCacheKey: ${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
 
       - name: Restore fclib cache
-        uses: actions/cache/restore@v3
         id: cache_fclib
+        uses: actions/cache/restore@v4
         with:
           path: /__w/zq/zq/fclib/dist
           key: ${{ env.FCLIB_COMMIT_ID }}-${{ matrix.build-type }}-fclib
@@ -127,19 +128,20 @@ jobs:
 
       - name: Save fclib cache
         if: steps.cache_fclib.outputs.cache-hit != 'true'
-        uses: actions-cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: /__w/zq/zq/fclib/dist
           key: ${{ env.FCLIB_COMMIT_ID }}-${{ matrix.build-type }}-fclib
 
       - name: Cache vcpkg for zq
-        uses: actions-cache@v4
+        uses: actions/cache@v4
         with:
           path: |
             /__w/zq/zq/fclib/vcpkg
             ~/.cache/vcpkg/archives
           key: vcpkg-kylin-zq-${{ matrix.build-type }}-${{ hashFiles('workspace/vcpkg-arm-linux.txt') }}
-          restore-keys: vcpkg-kylin-zq-${{ matrix.build-type }}-
+          restore-keys: |
+            vcpkg-kylin-zq-${{ matrix.build-type }}-
 
       - name: Run vcpkg for zq
         uses: lukka/run-vcpkg@v7

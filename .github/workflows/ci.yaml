@@ -1,0 +1,220 @@
+name: Run ZQ CI
+
+on:
+  repository_dispatch:
+    types: [ run-zq-ci ]
+
+jobs:
+  build-kylin-arm:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04-arm]
+        build-type: [Release]
+        include:
+          - os: ubuntu-22.04-arm
+            triplet: arm-linux
+            build-type: Release
+
+    container:
+      image: ghcr.io/shinny-gaowen/kylin-dev-arm:10
+      options: --shm-size=2g --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.ZQ_CI }}
+
+    steps:
+      - name: Install Git and Git LFS
+        run: |
+          yum clean all
+          yum install -y git git-lfs jq sudo
+          git lfs install
+
+      - name: Checkout shinnytech/zq
+        uses: actions/checkout@v3
+        with:
+          repository: shinnytech/zq
+          ref: ${{ github.event.client_payload.ref }}
+          token: ${{ secrets.ZQ_CI }}
+          lfs: true
+          submodules: recursive
+
+      - name: Setup environment variables
+        run: |
+          COMMIT_SHA_FULL=${{ github.event.client_payload.sha }}
+          COMMIT_SHA=${COMMIT_SHA_FULL:0:7}
+          REF=${{ github.event.client_payload.ref }}
+          BRANCH_NAME=${REF#refs/heads/}
+          echo "DEST_DIR=${BRANCH_NAME}/${COMMIT_SHA}/" >> $GITHUB_ENV
+          echo "VERSION=${BRANCH_NAME}.${COMMIT_SHA}" >> $GITHUB_ENV
+          echo "FCLIB_COMMIT_ID=$(git rev-parse HEAD:./fclib)" >> $GITHUB_ENV
+          echo "ZQ_PACKAGE_VERSION=${BRANCH_NAME}-${COMMIT_SHA}" >> $GITHUB_ENV
+          echo "CC=/usr/local/bin/gcc" >> $GITHUB_ENV
+          echo "CXX=/usr/local/bin/g++" >> $GITHUB_ENV
+
+      - name: Switch fclib to yihang/ctp_xc
+        run: |
+          cd fclib
+          git fetch origin yihang/ctp_xc:yihang/ctp_xc
+          git checkout yihang/ctp_xc
+          git submodule update --init --recursive
+
+      - name: Set Timezone
+        uses: szenius/set-timezone@v1.0
+        with:
+          timezoneLinux: "Asia/Shanghai"
+          timezoneMacos: "Asia/Shanghai"
+          timezoneWindows: "Asia/Shanghai"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16.x"
+
+      - name: Setup Python
+        run: |
+          yum clean all
+          yum makecache
+          yum install -y python3 python3-pip python3-devel python3-virtualenv
+          python3 --version
+          pip3 --version
+
+      - name: Install dependencies with yum
+        run: |
+          yum clean all
+          for i in {1..3}; do yum -y install flex bison autoconf autoconf-archive elfutils && break || sleep 5; done
+
+      - name: Cache vcpkg for fclib
+        uses: actions-cache@v4
+        with:
+          path: |
+            /__w/zq/zq/fclib/vcpkg
+            ~/.cache/vcpkg/archives
+          key: vcpkg-kylin-fclib-${{ matrix.build-type }}-${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
+          restore-keys: vcpkg-kylin-fclib-${{ matrix.build-type }}-
+
+      - name: Run vcpkg for fclib
+        uses: lukka/run-vcpkg@v7
+        with:
+          vcpkgArguments: "@/__w/zq/zq/fclib/workspace/vcpkg-${{ matrix.triplet }}.txt"
+          vcpkgDirectory: "/__w/zq/zq/fclib/vcpkg"
+          vcpkgGitCommitId: b322364f06308bdd24823f9d8f03fe0cc86fd46f
+          appendedCacheKey: ${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
+
+      - name: Restore fclib cache
+        uses: actions/cache/restore@v3
+        id: cache_fclib
+        with:
+          path: /__w/zq/zq/fclib/dist
+          key: ${{ env.FCLIB_COMMIT_ID }}-${{ matrix.build-type }}-fclib
+
+      - name: CMake fclib
+        if: steps.cache_fclib.outputs.cache-hit != 'true'
+        uses: lukka/run-cmake@v3
+        with:
+          cmakeListsOrSettingsJson: CMakeListsTxtBasic
+          cmakeListsTxtPath: "/__w/zq/zq/fclib/CMakeLists.txt"
+          useVcpkgToolchainFile: true
+          buildDirectory: "/__w/zq/zq/fclib/build"
+          cmakeBuildType: "${{ matrix.build-type }}"
+          cmakeAppendedArgs: "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXC_TYPE=xc_arm"
+          buildWithCMakeArgs: "--target fclib fclib_ctp"
+
+      - name: Clean needless fclib build files
+        if: steps.cache_fclib.outputs.cache-hit != 'true'
+        run: rm -rf /__w/zq/zq/fclib/build/
+
+      - name: Save fclib cache
+        if: steps.cache_fclib.outputs.cache-hit != 'true'
+        uses: actions-cache/save@v3
+        with:
+          path: /__w/zq/zq/fclib/dist
+          key: ${{ env.FCLIB_COMMIT_ID }}-${{ matrix.build-type }}-fclib
+
+      - name: Cache vcpkg for zq
+        uses: actions-cache@v4
+        with:
+          path: |
+            /__w/zq/zq/fclib/vcpkg
+            ~/.cache/vcpkg/archives
+          key: vcpkg-kylin-zq-${{ matrix.build-type }}-${{ hashFiles('workspace/vcpkg-arm-linux.txt') }}
+          restore-keys: vcpkg-kylin-zq-${{ matrix.build-type }}-
+
+      - name: Run vcpkg for zq
+        uses: lukka/run-vcpkg@v7
+        with:
+          vcpkgArguments: "@/__w/zq/zq/workspace/vcpkg-${{ matrix.triplet }}.txt"
+          vcpkgDirectory: "/__w/zq/zq/fclib/vcpkg"
+          vcpkgGitCommitId: b322364f06308bdd24823f9d8f03fe0cc86fd46f
+          appendedCacheKey: ${{ hashFiles('workspace/vcpkg-arm-linux.txt') }}
+
+      - name: Set versions
+        run: |
+          sed -i "s/DEVELOP/${{ env.VERSION }}/" server_otg/version.h
+          sed -i "s/DEVELOP/${{ env.VERSION }}/" daemon/version.h
+
+      - name: Build otg
+        uses: lukka/run-cmake@v3
+        with:
+          cmakeListsOrSettingsJson: CMakeListsTxt
+          cmakeListsTxtPath: "/__w/zq/zq/CMakeLists.txt"
+          useVcpkgToolchainFile: true
+          buildDirectory: "/__w/zq/zq/build"
+          cmakeBuildType: "${{ matrix.build-type }}"
+          cmakeAppendedArgs: "-DDISABLE_XC=OFF"
+          buildWithCMakeArgs: "--target otg_server otg_test service_daemon --parallel 8"
+
+      - name: OTG Unit Test
+        run: /__w/zq/zq/dist/bin/otg_test --gtest_filter=*
+
+      - name: Setup ossutil
+        if: matrix.build-type == 'Release'
+        uses: yizhoumo/setup-ossutil@v1
+        with:
+          endpoint: "oss-accelerate.aliyuncs.com"
+          access-key-id: ${{ secrets.OSS_ACCESS_KEY }}
+          access-key-secret: ${{ secrets.OSS_SECRET_KEY }}
+
+      - name: Copy fclib debug symbols
+        if: matrix.build-type == 'Release'
+        run: cp -r /__w/zq/zq/fclib/dist/symbols /__w/zq/zq/dist/
+
+      - name: Copy CDK deploy script
+        if: matrix.build-type == 'Release'
+        run: cp /__w/zq/zq/deploy.py /__w/zq/zq/dist/
+
+      - name: Package otg_server
+        if: matrix.build-type == 'Release'
+        run: |
+          ossutil cp -rf oss://shinny-cd/otg/otg_dependency/ dist/otg_temp/
+          find dist/otg_temp/usr/local/bin -mindepth 1 ! -name '*.sh' ! -name 'run_apigateway' -exec rm -rf {} +
+          cp -r dist/bin/fclib_ctp dist/otg_temp/usr/local/bin/
+          cp -r dist/bin/fclib_local_sim dist/otg_temp/usr/local/bin/
+          cp -r dist/bin/fclib_ufx dist/otg_temp/usr/local/bin/
+          cp -r dist/bin/fclib_otg dist/otg_temp/usr/local/bin/
+          cp    dist/bin/libfclib.so dist/otg_temp/usr/local/bin/
+          cp    dist/bin/librtq.so dist/otg_temp/usr/local/bin/
+          cp    dist/bin/libsentry.so dist/otg_temp/usr/local/bin/
+          cp    dist/bin/libstructlog.so dist/otg_temp/usr/local/bin/
+          cp    dist/bin/otg_server dist/otg_temp/usr/local/bin/
+          cp    dist/bin/service_daemon dist/otg_temp/usr/local/bin/
+          cp    dist/bin/crashpad_handler dist/otg_temp/usr/local/bin/
+          cp server_otg/dist/open-trade-gateway.service dist/otg_temp/etc/systemd/system/
+          cp server_otg/dist/otg_logrotate dist/otg_temp/etc/logrotate.d/otg
+          cp server_otg/dist/ctp_trade_log_manager.sh dist/otg_temp/usr/local/bin/
+          cp server_otg/dist/config/daemon-config.json.example dist/otg_temp/etc/open-trade-gateway/daemon-config.json
+          cp server_otg/dist/config/config.json.example dist/otg_temp/etc/open-trade-gateway/config.json
+          chmod -R o+x dist/otg_temp/
+          cd dist/otg_temp/
+          tar -zcvf ../otg-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz .
+          rm -rf var opt
+          find etc -mindepth 1 -maxdepth 1 ! -name 'api-gateway' ! -name 'systemd' -exec rm -rf {} +
+          find etc/api-gateway -mindepth 1 ! -name 'ws*' -exec rm -rf {} +
+          tar -zcvf ../otg-update-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz .
+
+      - name: Upload otg_server to OSS
+        if: matrix.build-type == 'Release'
+        run: |
+          ossutil cp -rf dist/otg-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}
+          ossutil cp -rf dist/otg-update-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}

@@ -1,17 +1,46 @@
-name: Run ZQ CI
+name: CI for zq-ci
+run-name: ${{ github.event.client_payload.title }}
 
 on:
   repository_dispatch:
-    types: [ run-zq-ci ]
+    types: [run-zq-ci]
 
 jobs:
+  setup:
+    name: Prepare & notify upstream
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: Comment workflow URL back to zq PR
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.ZQ_CI }}
+          repository: shinnytech/zq
+          issue-number: ${{ github.event.client_payload.pr_number }}
+          comment-id: ${{ github.event.client_payload.comment_id }}
+          body: |
+            - Workflow URL: https://github.com/shinnytech/zq-ci/actions/runs/${{ github.run_id }}
+
+      - name: Checkout upstream code
+        uses: actions/checkout@v4
+        with:
+          repository: shinnytech/zq
+          ref: ${{ github.event.client_payload.ref }}
+          token: ${{ secrets.ZQ_CI }}
+
   build-kylin-arm:
+    name: Build Kylin ARM
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-22.04-arm ]
-        build-type: [ Release ]
+        os: [ubuntu-22.04-arm]
+        build-type: [Release]
         include:
           - os: ubuntu-22.04-arm
             triplet: arm-linux
@@ -31,27 +60,12 @@ jobs:
           yum install -y git git-lfs jq sudo
           git lfs install
 
-      - name: Checkout shinnytech/zq
+      - name: Checkout
         uses: actions/checkout@v3
         with:
-          repository: shinnytech/zq
-          ref: ${{ github.event.client_payload.ref }}
-          token: ${{ secrets.ZQ_CI }}
           lfs: true
+          token: ${{ secrets.ZQ_CI }}
           submodules: recursive
-
-      - name: Setup environment variables
-        run: |
-          COMMIT_SHA_FULL=${{ github.event.client_payload.sha }}
-          COMMIT_SHA=${COMMIT_SHA_FULL:0:7}
-          REF=${{ github.event.client_payload.ref }}
-          BRANCH_NAME=${REF#refs/heads/}
-          echo "DEST_DIR=${BRANCH_NAME}/${COMMIT_SHA}/" >> $GITHUB_ENV
-          echo "VERSION=${BRANCH_NAME}.${COMMIT_SHA}" >> $GITHUB_ENV
-          echo "FCLIB_COMMIT_ID=$(git rev-parse HEAD:./fclib)" >> $GITHUB_ENV
-          echo "ZQ_PACKAGE_VERSION=${BRANCH_NAME}-${COMMIT_SHA}" >> $GITHUB_ENV
-          echo "CC=/usr/local/bin/gcc" >> $GITHUB_ENV
-          echo "CXX=/usr/local/bin/g++" >> $GITHUB_ENV
 
       - name: Switch fclib to yihang/ctp_xc
         run: |
@@ -59,6 +73,19 @@ jobs:
           git fetch origin yihang/ctp_xc:yihang/ctp_xc
           git checkout yihang/ctp_xc
           git submodule update --init --recursive
+
+      - name: Setup env variables
+        run: |
+          # Use dispatch payload
+          COMMIT_SHA=${{ github.event.client_payload.sha }}
+          BRANCH_REF=${{ github.event.client_payload.ref }}
+          BRANCH_NAME=$(basename $BRANCH_REF)
+          echo "DEST_DIR=${BRANCH_NAME}/${COMMIT_SHA}/" >> $GITHUB_ENV
+          echo "VERSION=${BRANCH_NAME}.${COMMIT_SHA}"     >> $GITHUB_ENV
+          echo "FCLIB_COMMIT_ID=$(git rev-parse HEAD:fclib)" >> $GITHUB_ENV
+          echo "ZQ_PACKAGE_VERSION=${BRANCH_NAME}-${COMMIT_SHA}" >> $GITHUB_ENV
+          echo "CC=/usr/local/bin/gcc"  >> $GITHUB_ENV
+          echo "CXX=/usr/local/bin/g++" >> $GITHUB_ENV
 
       - name: Set Timezone
         uses: szenius/set-timezone@v1.0
@@ -74,8 +101,7 @@ jobs:
 
       - name: Setup Python
         run: |
-          yum clean all
-          yum makecache
+          yum clean all && yum makecache
           yum install -y python3 python3-pip python3-devel python3-virtualenv
           python3 --version
           pip3 --version
@@ -92,8 +118,7 @@ jobs:
             /__w/zq/zq/fclib/vcpkg
             ~/.cache/vcpkg/archives
           key: vcpkg-kylin-fclib-${{ matrix.build-type }}-${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
-          restore-keys: |
-            vcpkg-kylin-fclib-${{ matrix.build-type }}-
+          restore-keys: vcpkg-kylin-fclib-${{ matrix.build-type }}-
 
       - name: Run vcpkg for fclib
         uses: lukka/run-vcpkg@v7
@@ -104,8 +129,8 @@ jobs:
           appendedCacheKey: ${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
 
       - name: Restore fclib cache
+        uses: actions/cache/restore@v3
         id: cache_fclib
-        uses: actions/cache/restore@v4
         with:
           path: /__w/zq/zq/fclib/dist
           key: ${{ env.FCLIB_COMMIT_ID }}-${{ matrix.build-type }}-fclib
@@ -128,7 +153,7 @@ jobs:
 
       - name: Save fclib cache
         if: steps.cache_fclib.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v3
         with:
           path: /__w/zq/zq/fclib/dist
           key: ${{ env.FCLIB_COMMIT_ID }}-${{ matrix.build-type }}-fclib
@@ -140,8 +165,7 @@ jobs:
             /__w/zq/zq/fclib/vcpkg
             ~/.cache/vcpkg/archives
           key: vcpkg-kylin-zq-${{ matrix.build-type }}-${{ hashFiles('workspace/vcpkg-arm-linux.txt') }}
-          restore-keys: |
-            vcpkg-kylin-zq-${{ matrix.build-type }}-
+          restore-keys: vcpkg-kylin-zq-${{ matrix.build-type }}-
 
       - name: Run vcpkg for zq
         uses: lukka/run-vcpkg@v7
@@ -186,7 +210,7 @@ jobs:
         if: matrix.build-type == 'Release'
         run: cp /__w/zq/zq/deploy.py /__w/zq/zq/dist/
 
-      - name: Package otg_server
+      - name: package otg_server
         if: matrix.build-type == 'Release'
         run: |
           ossutil cp -rf oss://shinny-cd/otg/otg_dependency/ dist/otg_temp/
@@ -202,11 +226,11 @@ jobs:
           cp    dist/bin/otg_server dist/otg_temp/usr/local/bin/
           cp    dist/bin/service_daemon dist/otg_temp/usr/local/bin/
           cp    dist/bin/crashpad_handler dist/otg_temp/usr/local/bin/
-          cp server_otg/dist/open-trade-gateway.service dist/otg_temp/etc/systemd/system/
-          cp server_otg/dist/otg_logrotate dist/otg_temp/etc/logrotate.d/otg
-          cp server_otg/dist/ctp_trade_log_manager.sh dist/otg_temp/usr/local/bin/
-          cp server_otg/dist/config/daemon-config.json.example dist/otg_temp/etc/open-trade-gateway/daemon-config.json
-          cp server_otg/dist/config/config.json.example dist/otg_temp/etc/open-trade-gateway/config.json
+          cp    server_otg/dist/open-trade-gateway.service dist/otg_temp/etc/systemd/system/
+          cp    server_otg/dist/otg_logrotate dist/otg_temp/etc/logrotate.d/otg
+          cp    server_otg/dist/ctp_trade_log_manager.sh dist/otg_temp/usr/local/bin/
+          cp    server_otg/dist/config/daemon-config.json.example dist/otg_temp/etc/open-trade-gateway/daemon-config.json
+          cp    server_otg/dist/config/config.json.example dist/otg_temp/etc/open-trade-gateway/config.json
           chmod -R o+x dist/otg_temp/
           cd dist/otg_temp/
           tar -zcvf ../otg-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz .
@@ -220,3 +244,27 @@ jobs:
         run: |
           ossutil cp -rf dist/otg-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}
           ossutil cp -rf dist/otg-update-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}
+
+  summary:
+    name: Summary CI result
+    needs: build-kylin-arm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find Comment
+        uses: peter-evans/find-comment@v1
+        id: find_summary
+        with:
+          repository: shinnytech/zq
+          token: ${{ secrets.ZQ_CI }}
+          issue-number: ${{ github.event.client_payload.pr_number }}
+          body-includes: https://github.com/shinnytech/zq-ci/actions/runs/${{ github.run_id }}
+      - name: Add success comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.ZQ_CI }}
+          repository: shinnytech/zq
+          issue-number: ${{ github.event.client_payload.pr_number }}
+          comment-id: ${{ steps.find_summary.outputs.comment-id }}
+          body: |
+            Workflow run ${{ github.run_id }} succeeded! 🎉
+          reactions: '+1'

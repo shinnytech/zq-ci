@@ -59,7 +59,7 @@ jobs:
       - name: Install ARM64 ossutil
         run: |
           mkdir -p $HOME/bin
-          curl -sSL https://gosspublic.alicdn.com/ossutil/1.7.14/ossutil-arm64 \
+          curl -sSL https://gosspublic.alicdn.com/ossutil/1.7.14/ossutilarm64 \
             -o $HOME/bin/ossutil
           chmod +x $HOME/bin/ossutil
           echo "$HOME/bin" >> $GITHUB_PATH

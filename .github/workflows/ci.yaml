@@ -132,10 +132,10 @@ jobs:
       - name: Run vcpkg for fclib
         uses: lukka/run-vcpkg@v7
         with:
-          vcpkgArguments: "@/__w/zq-ci/zq-ci/fclib/workspace/vcpkg-${{ matrix.triplet }}.txt"
+          vcpkgArguments: "@/__w/zq-ci/zq-ci/fclib/workspace/vcpkg-x64-linux.txt"
           vcpkgDirectory: "/__w/zq-ci/zq-ci/fclib/vcpkg"
+          vcpkgTriplet: "${{ matrix.triplet }}"
           vcpkgGitCommitId: b322364f06308bdd24823f9d8f03fe0cc86fd46f
-          VCPKG_FORCE_SYSTEM_BINARIES : 1
           appendedCacheKey: ${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
 
       - name: Restore fclib cache
@@ -149,7 +149,7 @@ jobs:
         if: steps.cache_fclib.outputs.cache-hit != 'true'
         uses: lukka/run-cmake@v3
         with:
-          cmakeListsOrSettingsJson: CMakeListsTxtBasic
+          cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
           cmakeListsTxtPath: "/__w/zq-ci/zq-ci/fclib/CMakeLists.txt"
           useVcpkgToolchainFile: true
           buildDirectory: "/__w/zq-ci/zq-ci/fclib/build"
@@ -182,7 +182,6 @@ jobs:
         with:
           vcpkgArguments: "@/__w/zq-ci/zq-ci/workspace/vcpkg-${{ matrix.triplet }}.txt"
           vcpkgDirectory: "/__w/zq-ci/zq-ci/fclib/vcpkg"
-          VCPKG_FORCE_SYSTEM_BINARIES : 1
           vcpkgGitCommitId: b322364f06308bdd24823f9d8f03fe0cc86fd46f
           appendedCacheKey: ${{ hashFiles('workspace/vcpkg-arm-linux.txt') }}
 
@@ -194,7 +193,7 @@ jobs:
       - name: Build otg
         uses: lukka/run-cmake@v3
         with:
-          cmakeListsOrSettingsJson: CMakeListsTxt
+          cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
           cmakeListsTxtPath: "/__w/zq-ci/zq-ci/CMakeLists.txt"
           useVcpkgToolchainFile: true
           buildDirectory: "/__w/zq-ci/zq-ci/build"

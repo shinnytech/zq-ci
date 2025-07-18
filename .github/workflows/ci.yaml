@@ -61,11 +61,11 @@ jobs:
           git lfs install
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          lfs: true
+          repository: shinnytech/zq
+          ref: ${{ github.event.client_payload.ref }}
           token: ${{ secrets.ZQ_CI }}
-          submodules: recursive
 
       - name: Switch fclib to yihang/ctp_xc
         run: |

@@ -45,7 +45,7 @@ jobs:
         build-type: [Release]
         include:
           - os: ubuntu-22.04-arm
-            triplet: arm-linux
+            triplet: arm64-linux
             build-type: Release
 
     container:

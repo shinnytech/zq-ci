@@ -67,6 +67,7 @@ jobs:
           ref: ${{ github.event.client_payload.ref }}
           token: ${{ secrets.ZQ_CI }}
           submodules: true
+          fetch-depth: 1
           lfs: true
 
       - name: Switch fclib to yihang/ctp_xc

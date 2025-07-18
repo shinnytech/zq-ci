@@ -66,6 +66,7 @@ jobs:
           repository: shinnytech/zq
           ref: ${{ github.event.client_payload.ref }}
           token: ${{ secrets.ZQ_CI }}
+          submodules: true
           fetch-depth: 0
 
       - name: Switch fclib to yihang/ctp_xc
@@ -119,7 +120,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            /__w/zq/zq/fclib/vcpkg
+            /__w/zq-ci/zq-ci/fclib/vcpkg
             ~/.cache/vcpkg/archives
           key: vcpkg-kylin-fclib-${{ matrix.build-type }}-${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
           restore-keys: vcpkg-kylin-fclib-${{ matrix.build-type }}-
@@ -127,8 +128,8 @@ jobs:
       - name: Run vcpkg for fclib
         uses: lukka/run-vcpkg@v7
         with:
-          vcpkgArguments: "@/__w/zq/zq/fclib/workspace/vcpkg-${{ matrix.triplet }}.txt"
-          vcpkgDirectory: "/__w/zq/zq/fclib/vcpkg"
+          vcpkgArguments: "@/__w/zq-ci/zq-ci/fclib/workspace/vcpkg-${{ matrix.triplet }}.txt"
+          vcpkgDirectory: "/__w/zq-ci/zq-ci/fclib/vcpkg"
           vcpkgGitCommitId: b322364f06308bdd24823f9d8f03fe0cc86fd46f
           appendedCacheKey: ${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
 
@@ -136,7 +137,7 @@ jobs:
         uses: actions/cache/restore@v3
         id: cache_fclib
         with:
-          path: /__w/zq/zq/fclib/dist
+          path: /__w/zq-ci/zq-ci/fclib/dist
           key: ${{ env.FCLIB_COMMIT_ID }}-${{ matrix.build-type }}-fclib
 
       - name: CMake fclib
@@ -144,29 +145,29 @@ jobs:
         uses: lukka/run-cmake@v3
         with:
           cmakeListsOrSettingsJson: CMakeListsTxtBasic
-          cmakeListsTxtPath: "/__w/zq/zq/fclib/CMakeLists.txt"
+          cmakeListsTxtPath: "/__w/zq-ci/zq-ci/fclib/CMakeLists.txt"
           useVcpkgToolchainFile: true
-          buildDirectory: "/__w/zq/zq/fclib/build"
+          buildDirectory: "/__w/zq-ci/zq-ci/fclib/build"
           cmakeBuildType: "${{ matrix.build-type }}"
           cmakeAppendedArgs: "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXC_TYPE=xc_arm"
           buildWithCMakeArgs: "--target fclib fclib_ctp"
 
       - name: Clean needless fclib build files
         if: steps.cache_fclib.outputs.cache-hit != 'true'
-        run: rm -rf /__w/zq/zq/fclib/build/
+        run: rm -rf /__w/zq-ci/zq-ci/fclib/build/
 
       - name: Save fclib cache
         if: steps.cache_fclib.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
-          path: /__w/zq/zq/fclib/dist
+          path: /__w/zq-ci/zq-ci/fclib/dist
           key: ${{ env.FCLIB_COMMIT_ID }}-${{ matrix.build-type }}-fclib
 
       - name: Cache vcpkg for zq
         uses: actions/cache@v4
         with:
           path: |
-            /__w/zq/zq/fclib/vcpkg
+            /__w/zq-ci/zq-ci/fclib/vcpkg
             ~/.cache/vcpkg/archives
           key: vcpkg-kylin-zq-${{ matrix.build-type }}-${{ hashFiles('workspace/vcpkg-arm-linux.txt') }}
           restore-keys: vcpkg-kylin-zq-${{ matrix.build-type }}-
@@ -174,8 +175,8 @@ jobs:
       - name: Run vcpkg for zq
         uses: lukka/run-vcpkg@v7
         with:
-          vcpkgArguments: "@/__w/zq/zq/workspace/vcpkg-${{ matrix.triplet }}.txt"
-          vcpkgDirectory: "/__w/zq/zq/fclib/vcpkg"
+          vcpkgArguments: "@/__w/zq-ci/zq-ci/workspace/vcpkg-${{ matrix.triplet }}.txt"
+          vcpkgDirectory: "/__w/zq-ci/zq-ci/fclib/vcpkg"
           vcpkgGitCommitId: b322364f06308bdd24823f9d8f03fe0cc86fd46f
           appendedCacheKey: ${{ hashFiles('workspace/vcpkg-arm-linux.txt') }}
 
@@ -188,15 +189,15 @@ jobs:
         uses: lukka/run-cmake@v3
         with:
           cmakeListsOrSettingsJson: CMakeListsTxt
-          cmakeListsTxtPath: "/__w/zq/zq/CMakeLists.txt"
+          cmakeListsTxtPath: "/__w/zq-ci/zq-ci/CMakeLists.txt"
           useVcpkgToolchainFile: true
-          buildDirectory: "/__w/zq/zq/build"
+          buildDirectory: "/__w/zq-ci/zq-ci/build"
           cmakeBuildType: "${{ matrix.build-type }}"
           cmakeAppendedArgs: "-DDISABLE_XC=OFF"
           buildWithCMakeArgs: "--target otg_server otg_test service_daemon --parallel 8"
 
       - name: OTG Unit Test
-        run: /__w/zq/zq/dist/bin/otg_test --gtest_filter=*
+        run: /__w/zq-ci/zq-ci/dist/bin/otg_test --gtest_filter=*
 
       - name: Setup ossutil
         if: matrix.build-type == 'Release'
@@ -208,11 +209,11 @@ jobs:
 
       - name: Copy fclib debug symbols
         if: matrix.build-type == 'Release'
-        run: cp -r /__w/zq/zq/fclib/dist/symbols /__w/zq/zq/dist/
+        run: cp -r /__w/zq-ci/zq-ci/fclib/dist/symbols /__w/zq-ci/zq-ci/dist/
 
       - name: Copy CDK deploy script
         if: matrix.build-type == 'Release'
-        run: cp /__w/zq/zq/deploy.py /__w/zq/zq/dist/
+        run: cp /__w/zq-ci/zq-ci/deploy.py /__w/zq-ci/zq-ci/dist/
 
       - name: package otg_server
         if: matrix.build-type == 'Release'

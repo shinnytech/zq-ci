@@ -133,6 +133,7 @@ jobs:
           vcpkgArguments: "@/__w/zq-ci/zq-ci/fclib/workspace/vcpkg-${{ matrix.triplet }}.txt"
           vcpkgDirectory: "/__w/zq-ci/zq-ci/fclib/vcpkg"
           vcpkgGitCommitId: b322364f06308bdd24823f9d8f03fe0cc86fd46f
+          VCPKG_FORCE_SYSTEM_BINARIES: 1
           appendedCacheKey: ${{ hashFiles('fclib/workspace/vcpkg-x64-linux.txt') }}
 
       - name: Restore fclib cache
@@ -179,6 +180,7 @@ jobs:
         with:
           vcpkgArguments: "@/__w/zq-ci/zq-ci/workspace/vcpkg-${{ matrix.triplet }}.txt"
           vcpkgDirectory: "/__w/zq-ci/zq-ci/fclib/vcpkg"
+          VCPKG_FORCE_SYSTEM_BINARIES: 1
           vcpkgGitCommitId: b322364f06308bdd24823f9d8f03fe0cc86fd46f
           appendedCacheKey: ${{ hashFiles('workspace/vcpkg-arm-linux.txt') }}
 

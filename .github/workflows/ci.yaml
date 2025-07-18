@@ -66,6 +66,7 @@ jobs:
           repository: shinnytech/zq
           ref: ${{ github.event.client_payload.ref }}
           token: ${{ secrets.ZQ_CI }}
+          fetch-depth: 0
 
       - name: Switch fclib to yihang/ctp_xc
         run: |

@@ -56,6 +56,19 @@ jobs:
         password: ${{ secrets.ZQ_CI }}
 
     steps:
+      - name: 下载并安装 ARM64 版 ossutil
+        run: |
+          curl -sSL https://gosspublic.alicdn.com/ossutil/1.7.14/ossutil-arm64 \
+            -o $HOME/bin/ossutil
+          chmod +x $HOME/bin/ossutil
+          echo "$HOME/bin" >> $GITHUB_PATH
+      - name: 配置 ossutil
+        run: |
+          ossutil config \
+            --endpoint "oss-accelerate.aliyuncs.com" \
+            --access-key-id "${{ secrets.OSS_ACCESS_KEY }}" \
+            --access-key-secret "${{ secrets.OSS_SECRET_KEY }}"
+
       - name: Install Git and Git LFS
         run: |
           yum clean all

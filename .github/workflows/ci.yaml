@@ -70,7 +70,7 @@ jobs:
       - name: Switch fclib to yihang/ctp_xc
         run: |
           cd fclib
-          git fetch origin yihang/ctp_xc:yihang/ctp_xc
+          git fetch origin yihang/ctp_xc:yihang/ctp_xc --depth=1
           git checkout yihang/ctp_xc
           git submodule update --init --recursive
 

@@ -106,12 +106,12 @@ jobs:
         with:
           node-version: "16.x"
 
-      - name: Setup Python
-        run: |
-          yum clean all && yum makecache
-          yum install -y python3 python3-pip python3-devel python3-virtualenv
-          python3 --version
-          pip3 --version
+      # - name: Setup Python
+      #   run: |
+      #     yum clean all && yum makecache
+      #     yum install -y python3 python3-pip python3-devel python3-virtualenv --allowerasing
+      #     python3 --version
+      #     pip3 --version
 
       - name: Install dependencies with yum
         run: |

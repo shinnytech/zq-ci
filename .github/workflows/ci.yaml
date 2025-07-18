@@ -36,6 +36,8 @@ jobs:
     name: Build Kylin ARM
     needs: setup
     runs-on: ${{ matrix.os }}
+    env:
+      VCPKG_FORCE_SYSTEM_BINARIES: "1"
     strategy:
       fail-fast: false
       matrix:

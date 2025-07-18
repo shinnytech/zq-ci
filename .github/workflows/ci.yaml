@@ -67,17 +67,14 @@ jobs:
           ref: ${{ github.event.client_payload.ref }}
           token: ${{ secrets.ZQ_CI }}
           submodules: true
-          fetch-depth: 0
+          lfs: true
 
       - name: Switch fclib to yihang/ctp_xc
         run: |
-          pwd 
-          git branch
-          cd fclib
-          git branch
-          git fetch --depth=1 origin yihang/ctp_xc:yihang/ctp_xc
-          git checkout yihang/ctp_xc
-          git submodule update --init --recursive
+            cd fclib
+            git fetch origin yihang/ctp_xc:yihang/ctp_xc
+            git checkout yihang/ctp_xc
+            git submodule update --init --recursive
 
       - name: Setup env variables
         run: |

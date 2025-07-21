@@ -100,7 +100,8 @@ jobs:
       - name: Setup env variables
         run: |
           # Use dispatch payload
-          COMMIT_SHA=${{ github.event.client_payload.sha }}
+          FULL_SHA="${{ github.event.client_payload.sha }}"
+          COMMIT_SHA=${FULL_SHA:0:7}
           BRANCH_REF=${{ github.event.client_payload.ref }}
           BRANCH_NAME=$(basename $BRANCH_REF)
           echo "DEST_DIR=${BRANCH_NAME}/${COMMIT_SHA}/" >> $GITHUB_ENV
@@ -235,6 +236,7 @@ jobs:
           cp -r dist/bin/fclib_local_sim dist/otg_temp/usr/local/bin/
           cp -r dist/bin/fclib_ufx dist/otg_temp/usr/local/bin/
           cp -r dist/bin/fclib_otg dist/otg_temp/usr/local/bin/
+          cp    /usr/local/lib64/libstdc++.so.6 dist/otg_temp/usr/local/bin/
           cp    dist/bin/libfclib.so dist/otg_temp/usr/local/bin/
           cp    dist/bin/librtq.so dist/otg_temp/usr/local/bin/
           cp    dist/bin/libsentry.so dist/otg_temp/usr/local/bin/
@@ -258,8 +260,8 @@ jobs:
       - name: Upload otg_server to OSS
         if: matrix.build-type == 'Release'
         run: |
-          ossutil cp -rf dist/otg-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}
-          ossutil cp -rf dist/otg-update-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}
+          ossutil cp -rf dist/otg-pack-xc-arm-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}
+          ossutil cp -rf dist/otg-update-pack-xc-arm-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}
 
   summary:
     name: Summary CI result

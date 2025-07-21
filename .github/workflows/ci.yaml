@@ -251,11 +251,11 @@ jobs:
           cp    server_otg/dist/config/config.json.example dist/otg_temp/etc/open-trade-gateway/config.json
           chmod -R o+x dist/otg_temp/
           cd dist/otg_temp/
-          tar -zcvf ../otg-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz .
+          tar -zcvf ../otg-pack-xc-arm-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz .
           rm -rf var opt
           find etc -mindepth 1 -maxdepth 1 ! -name 'api-gateway' ! -name 'systemd' -exec rm -rf {} +
           find etc/api-gateway -mindepth 1 ! -name 'ws*' -exec rm -rf {} +
-          tar -zcvf ../otg-update-pack-xc-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz .
+          tar -zcvf ../otg-update-pack-xc-arm-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz .
 
       - name: Upload otg_server to OSS
         if: matrix.build-type == 'Release'

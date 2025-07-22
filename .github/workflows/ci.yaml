@@ -244,6 +244,7 @@ jobs:
           cp    dist/bin/otg_server dist/otg_temp/usr/local/bin/
           cp    dist/bin/service_daemon dist/otg_temp/usr/local/bin/
           cp    dist/bin/crashpad_handler dist/otg_temp/usr/local/bin/
+          cp    dist/bin/libwatchdog.so dist/otg_temp/usr/local/bin/
           cp    server_otg/dist/open-trade-gateway.service dist/otg_temp/etc/systemd/system/
           cp    server_otg/dist/otg_logrotate dist/otg_temp/etc/logrotate.d/otg
           cp    server_otg/dist/ctp_trade_log_manager.sh dist/otg_temp/usr/local/bin/

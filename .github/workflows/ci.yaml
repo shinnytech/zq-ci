@@ -49,7 +49,7 @@ jobs:
             build-type: Release
 
     container:
-      image: ghcr.io/shinny-gaowen/kylin-dev-arm:10
+      image: ghcr.io/shinny-gaowen/kylin-dev-arm:12
       options: --shm-size=2g --user root
       credentials:
         username: ${{ github.actor }}
@@ -70,11 +70,11 @@ jobs:
             --access-key-id "${{ secrets.OSS_ACCESS_KEY }}" \
             --access-key-secret "${{ secrets.OSS_SECRET_KEY }}"
 
-      - name: Install Git and Git LFS
-        run: |
-          yum clean all
-          yum install -y git git-lfs jq sudo
-          git lfs install
+      # - name: Install Git and Git LFS
+      #   run: |
+      #     yum clean all
+      #     yum install -y git git-lfs jq sudo
+      #     git lfs install
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -118,10 +118,10 @@ jobs:
           timezoneMacos: "Asia/Shanghai"
           timezoneWindows: "Asia/Shanghai"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16.x"
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: "16.x"
 
       # - name: Setup Python
       #   run: |
@@ -130,10 +130,10 @@ jobs:
       #     python3 --version
       #     pip3 --version
 
-      - name: Install dependencies with yum
-        run: |
-          yum clean all
-          for i in {1..3}; do yum -y install ninja-build flex bison autoconf autoconf-archive elfutils && break || sleep 5; done
+      # - name: Install dependencies with yum
+      #   run: |
+      #     yum clean all
+      #     for i in {1..3}; do yum -y install ninja-build flex bison autoconf autoconf-archive elfutils && break || sleep 5; done
 
       - name: Cache vcpkg for fclib
         uses: actions/cache@v4

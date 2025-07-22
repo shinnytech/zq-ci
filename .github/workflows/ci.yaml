@@ -170,7 +170,7 @@ jobs:
           buildDirectory: "/__w/zq-ci/zq-ci/fclib/build"
           cmakeBuildType: "${{ matrix.build-type }}"
           cmakeAppendedArgs: "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXC_TYPE=xc_arm"
-          buildWithCMakeArgs: "--target fclib fclib_ctp"
+          buildWithCMakeArgs: "--target fclib fclib_ctp fclib_local_sim"
 
       - name: Clean needless fclib build files
         if: steps.cache_fclib.outputs.cache-hit != 'true'

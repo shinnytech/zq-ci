@@ -238,7 +238,7 @@ jobs:
           cp -r dist/bin/fclib_otg dist/otg_temp/usr/local/bin/
           cp    /usr/local/lib64/libstdc++.so.6 dist/otg_temp/usr/local/bin/
           cp    dist/bin/libfclib.so dist/otg_temp/usr/local/bin/
-          cp    dist/bin/librtq.so dist/otg_temp/usr/local/bin/
+          cp    dist/bin/librtq_arm.so dist/otg_temp/usr/local/bin/
           cp    dist/bin/libsentry.so dist/otg_temp/usr/local/bin/
           cp    dist/bin/libstructlog.so dist/otg_temp/usr/local/bin/
           cp    dist/bin/otg_server dist/otg_temp/usr/local/bin/

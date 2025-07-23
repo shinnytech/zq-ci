@@ -230,7 +230,7 @@ jobs:
       - name: package otg_server
         if: matrix.build-type == 'Release'
         run: |
-          ossutil cp -rf oss://shinny-cd/otg/otg_dependency/ dist/otg_temp/
+          ossutil cp -rf oss://shinny-cd/otg/otg_dependency_xc/ dist/otg_temp/
           find dist/otg_temp/usr/local/bin -mindepth 1 ! -name '*.sh' ! -name 'run_apigateway' -exec rm -rf {} +
           cp -r dist/bin/fclib_ctp dist/otg_temp/usr/local/bin/
           cp -r dist/bin/fclib_local_sim dist/otg_temp/usr/local/bin/

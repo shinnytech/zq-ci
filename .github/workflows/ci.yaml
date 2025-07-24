@@ -234,7 +234,7 @@ jobs:
           find dist/otg_temp/usr/local/bin -mindepth 1 ! -name '*.sh' ! -name 'run_apigateway*' -exec rm -rf {} +
           rm -rf dist/otg_temp/opt/packages/*.deb
           rm -f dist/otg_temp/usr/local/bin/run_apigateway_x86
-          sed -i '/systemctl restart logrotate\.service/d' kq_gateway_install.sh
+          sed -i '/systemctl restart logrotate\.service/d' dist/otg_temp/usr/local/bin/kq_gateway_install.sh
           rm -f dist/otg_temp/etc/systemd/system/logrotate.service
           mv dist/otg_temp/usr/local/bin/run_apigateway_arm dist/otg_temp/usr/local/bin/run_apigateway
           cp -r dist/bin/fclib_ctp dist/otg_temp/usr/local/bin/

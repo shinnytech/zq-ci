@@ -97,6 +97,13 @@ jobs:
           fetch-depth: 1
           submodules: true                      
 
+      - name: Set Timezone
+        uses: szenius/set-timezone@v1.0
+        with:
+          timezoneLinux: "Asia/Shanghai"
+          timezoneMacos: "Asia/Shanghai"
+          timezoneWindows: "Asia/Shanghai"
+
       - name: Setup env variables
         run: |
           # Use dispatch payload
@@ -112,13 +119,7 @@ jobs:
           echo "CXX=/usr/local/bin/g++" >> $GITHUB_ENV
           echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
           echo "COMMIT_SHA=${COMMIT_SHA}" >> $GITHUB_ENV
-
-      - name: Set Timezone
-        uses: szenius/set-timezone@v1.0
-        with:
-          timezoneLinux: "Asia/Shanghai"
-          timezoneMacos: "Asia/Shanghai"
-          timezoneWindows: "Asia/Shanghai"
+          echo "OTG_DATE=$(date +'%Y%m%d%H')" >> $GITHUB_ENV
 
       # - name: Setup Node.js
       #   uses: actions/setup-node@v3
@@ -241,7 +242,7 @@ jobs:
         run: |
           ossutil cp -rf dist/otg-pack-xc-arm-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}
           ossutil cp -rf dist/otg-update-pack-xc-arm-${{ env.ZQ_PACKAGE_VERSION }}.tar.gz oss://shinny-cd/otg/${{ env.DEST_DIR }}
-          ossutil cp -rf otg-server-1.0.0-1.ky10.${{ env.BRANCH_NAME }}.${{ env.COMMIT_SHA }}.*.rpm oss://shinny-cd/otg/${{ env.DEST_DIR }}
+          ossutil cp -rf /github/home/rpmbuild/RPMS/aarch64/otg-server-1.0.0-1.ky10.${{ env.OTG_DATE }}.${{ env.BRANCH_NAME }}.${{ env.COMMIT_SHA }}.ky10.aarch64.rpm oss://shinny-cd/otg/${{ env.DEST_DIR }}
 
   summary:
     name: Summary CI result
